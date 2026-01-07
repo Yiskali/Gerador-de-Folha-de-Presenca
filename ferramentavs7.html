@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Gerador de Folha de Presença</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+        :root { --bg-header: #e2efda; --bg-label: #c6e0b4; --border-color: #000; }
+        
+        body { font-family: 'Segoe UI', Arial, sans-serif; padding: 20px; background-color: #f0f2f5; color: #333; }
+        
+        .controls { 
+            background: white; padding: 25px; border-radius: 12px; 
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08); 
+            max-width: 900px; margin: 0 auto 30px; 
+        }
+        h1 { color: #2e7d32; margin: 0 0 10px 0; font-size: 22px; }
+        .subtitle { font-size: 14px; line-height: 1.5; color: #555; }
+        
+        textarea { 
+            width: 100%; height: 100px; margin: 15px 0; padding: 12px; 
+            border: 1px solid #ccd0d5; border-radius: 8px; box-sizing: border-box; 
+            font-size: 14px; resize: vertical;
+        }
+        
+        button { 
+            background: #2e7d32; color: white; border: none; padding: 14px; 
+            border-radius: 8px; cursor: pointer; font-weight: bold; width: 100%; 
+            font-size: 16px; transition: background 0.2s;
+        }
+        button:hover { background: #1b5e20; }
+
+        /* Área de Pré-visualização */
+        #preview-title { max-width: 287mm; margin: 20px auto 10px; font-weight: bold; color: #666; display: none; }
+        
+        #render-area { 
+            margin: 0 auto;
+            width: fit-content;
+        }
+
+        .pagina-pdf {
+            background: white;
+            width: 287mm; 
+            padding: 10mm;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            page-break-after: always;
+        }
+
+        .tabela-frequencia { width: 100%; border-collapse: collapse; font-size: 9pt; table-layout: fixed; }
+        .tabela-frequencia td, .tabela-frequencia th { border: 1px solid var(--border-color); padding: 5px; text-align: center; }
+        
+        .header-titulo { background-color: var(--bg-header); font-weight: bold; height: 30px; font-size: 11pt; }
+        .label-row td { background-color: var(--bg-label); font-weight: bold; height: 25px; font-size: 8.5pt; }
+        
+        .col-info { width: 18%; font-weight: bold; }
+        .col-data { width: 12.8%; }
+        .celula-assinatura { height: 60px; }
+        .spacer { height: 15px; border: none !important; }
+
+        @media print {
+            .controls, #preview-title { display: none; }
+            body { padding: 0; background: white; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="controls">
+    <h1>Gerador de Folha de Presença</h1>
+    <div class="subtitle">
+        Para usar a ferramenta, informe uma das opções abaixo:
+        <ul style="margin: 5px 0;">
+            <li>• Art. 1º da Portaria com período determinado; ou</li>
+            <li>• Nome, cargo e período.</li>
+        </ul>
+        Com esses dados, a frequência será gerada automaticamente.
+    </div>
+    
+    <textarea id="inputFrase" placeholder="Cole os dados aqui...">JOSE AMARAL DA SILVA NETO, Chefe de Serviço de Compras e Licitações, 01/01/2026 a 31/01/2026</textarea>
+    <button onclick="gerar()">Emitir e Baixar</button>
+</div>
+
+<div id="preview-title">PRÉ-VISUALIZAÇÃO DA FOLHA:</div>
+<div id="render-area"></div>
+
+<script>
+const MESES = { 'janeiro': '01', 'fevereiro': '02', 'março': '03', 'abril': '04', 'maio': '05', 'junho': '06', 'julho': '07', 'agosto': '08', 'setembro': '09', 'outubro': '10', 'novembro': '11', 'dezembro': '12' };
+
+function parseDataBR(dataStr) {
+    const partes = dataStr.split('/');
+    return new Date(partes[2], partes[1] - 1, partes[0]);
+}
+
+function extrairDados(frase) {
+    let nome = "", cargoFull = "", lotacao = "", listaDatasFormatadas = [];
+    const fraseLimpa = frase.replace(/\n/g, ' ').replace(/\s+/g, ' ');
+
+    if (fraseLimpa.toLocaleLowerCase().includes("designar")) {
+        const nomeMatch = fraseLimpa.match(/Designar\s+([^,]+)/i);
+        nome = nomeMatch ? nomeMatch[1].trim() : "";
+        const cargoMatch = fraseLimpa.match(/(?:cargo de|função gratificada de)\s+(.*?),\s+da/i);
+        cargoFull = cargoMatch ? cargoMatch[1].trim() : "";
+    } else {
+        const partes = fraseLimpa.split(',');
+        nome = partes[0].trim();
+        cargoFull = partes[1] ? partes[1].trim() : "";
+    }
+
+    lotacao = cargoFull.replace(/^(Chefe de |Chefe da |Assessor de |Assessor da |Gerente de |Gerente da |Substituto do |Substituto da )/i, "");
+
+    const datasBarras = fraseLimpa.match(/(\d{2}\/\d{2}\/\d{4})/g);
+    if (datasBarras && datasBarras.length >= 2) {
+        let atual = parseDataBR(datasBarras[0]);
+        const fim = parseDataBR(datasBarras[datasBarras.length - 1]);
+        while (atual <= fim) {
+            listaDatasFormatadas.push(`${String(atual.getDate()).padStart(2, '0')}/${String(atual.getMonth() + 1).padStart(2, '0')}/${atual.getFullYear()}`);
+            atual.setDate(atual.getDate() + 1);
+        }
+    } else {
+        const anoMatch = fraseLimpa.match(/\d{4}/g);
+        const ano = (anoMatch && anoMatch.length > 0) ? anoMatch[anoMatch.length - 1] : new Date().getFullYear();
+        const mesMatch = fraseLimpa.match(/(janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)/i);
+        const mesNum = mesMatch ? MESES[mesMatch[0].toLowerCase()] : "01";
+        const diasMatch = fraseLimpa.match(/(\d{2})\s+(?:a|à)\s+(\d{2})/);
+        if (diasMatch) {
+            let inicio = parseInt(diasMatch[1]);
+            let fim = parseInt(diasMatch[2]);
+            for(let d = inicio; d <= fim; d++) listaDatasFormatadas.push(`${String(d).padStart(2, '0')}/${mesNum}/${ano}`);
+        }
+    }
+    return { nome, cargo: cargoFull, lotacao, listaDatasFormatadas };
+}
+
+function montarTabela(dados, dias) {
+    let html = `<div class="pagina-pdf">
+        <table class="tabela-frequencia">
+            <thead>
+                <tr><th colspan="8" class="header-titulo">Folha de Presença dos Ocupantes de Cargo em Comissão e Função Gratificada</th></tr>
+            </thead>
+            <tbody>`;
+    
+    for (let i = 0; i < dias.length; i += 5) {
+        const grupo = dias.slice(i, i + 5);
+        html += `<tr class="label-row">
+            <td class="col-info">LOTAÇÃO</td><td class="col-info">CARGO</td><td class="col-info">NOME</td>`;
+        grupo.forEach(d => {
+            if (d) html += `<td class="col-data">${d}</td>`;
+        });
+        html += `</tr>`;
+
+        html += `<tr>
+            <td>${dados.lotacao.toUpperCase()}</td><td>${dados.cargo.toUpperCase()}</td><td>${dados.nome.toUpperCase()}</td>`;
+        grupo.forEach(d => {
+            if (d) html += `<td class="celula-assinatura"></td>`;
+        });
+        html += `</tr>`;
+        if (i + 5 < dias.length) html += `<tr class="spacer"><td colspan="8"></td></tr>`;
+    }
+    html += `</tbody></table></div>`;
+    return html;
+}
+
+async function gerar() {
+    const frase = document.getElementById('inputFrase').value;
+    const dados = extrairDados(frase);
+    const renderArea = document.getElementById('render-area');
+    const previewTitle = document.getElementById('preview-title');
+    
+    renderArea.innerHTML = ""; 
+
+    if(!dados.nome || dados.listaDatasFormatadas.length === 0) {
+        alert("Não foi possível entender os dados. Verifique se o formato está correto.");
+        return;
+    }
+
+    for (let i = 0; i < dados.listaDatasFormatadas.length; i += 25) {
+        const fatiaDias = dados.listaDatasFormatadas.slice(i, i + 25);
+        renderArea.innerHTML += montarTabela(dados, fatiaDias);
+    }
+    previewTitle.style.display = "block";
+
+    const opt = {
+        margin: 0,
+        filename: `Frequencia_${dados.nome.replace(/ /g, '_')}.pdf`,
+        image: { type: 'jpeg', quality: 1 },
+        html2canvas: { scale: 3, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+    };
+
+    try {
+        await html2pdf().set(opt).from(renderArea).save();
+    } catch (e) {
+        console.error("Erro ao gerar PDF:", e);
+    }
+}
+</script>
+</body>
+</html>
