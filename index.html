@@ -100,24 +100,44 @@ function extrairDados(frase) {
     let nome = "", cargoFull = "", lotacao = "", listaDatasFormatadas = [];
     const fraseLimpa = frase.replace(/\n/g, ' ').replace(/\s+/g, ' ');
 
+    // 1. Lógica para Portaria (Texto com "Designar")
     if (fraseLimpa.toLocaleLowerCase().includes("designar")) {
         const nomeMatch = fraseLimpa.match(/Designar\s+([^,]+)/i);
         nome = nomeMatch ? nomeMatch[1].trim() : "";
-        const cargoMatch = fraseLimpa.match(/(?:cargo de|função gratificada de)\s+(.*?),\s+da/i);
-        cargoFull = cargoMatch ? cargoMatch[1].trim() : "";
-    } else {
+
+        // NOVA REGEX: Pega o Cargo (grupo 1) E a Lotação que vem depois do "da/do" (grupo 2)
+        const matchCompleto = fraseLimpa.match(/(?:cargo de|função gratificada de)\s+(.*?),\s+(?:da|do|na|no|pela|pelo)\s+(.*?)(?:,|\.| no período)/i);
+
+        if (matchCompleto) {
+            cargoFull = matchCompleto[1].trim();
+            lotacao = matchCompleto[2].trim();
+        } else {
+            // Se não achar o padrão completo, tenta pegar só o cargo e limpar (fallback)
+            const matchSimples = fraseLimpa.match(/(?:cargo de|função gratificada de)\s+(.*?)(?:,|\.| no período)/i);
+            cargoFull = matchSimples ? matchSimples[1].trim() : "";
+            lotacao = cargoFull.replace(/^(Chefe de |Chefe da |Assessor de |Assessor da |Gerente de |Gerente da |Substituto do |Substituto da )/i, "");
+        }
+    } 
+    // 2. Lógica para Texto Direto (Separado por vírgulas)
+    else {
         const partes = fraseLimpa.split(',');
         nome = partes[0].trim();
         cargoFull = partes[1] ? partes[1].trim() : "";
+
+        // Verifica se o usuário informou: Nome, Cargo, LOTAÇÃO, Data (4 partes)
+        if (partes.length >= 4 && !partes[2].match(/\d/)) {
+             lotacao = partes[2].trim().replace(/^(da |do |na |no )/i, "");
+        } else {
+            // Se informou apenas: Nome, Cargo, Data (3 partes) -> Deriva a lotação do cargo
+            lotacao = cargoFull.replace(/^(Chefe de |Chefe da |Assessor de |Assessor da |Gerente de |Gerente da |Substituto do |Substituto da )/i, "");
+        }
     }
 
-    lotacao = cargoFull.replace(/^(Chefe de |Chefe da |Assessor de |Assessor da |Gerente de |Gerente da |Substituto do |Substituto da )/i, "");
-
+    // --- BLOCO DE DATAS (Mantido idêntico ao seu) ---
     const datasBarras = fraseLimpa.match(/(\d{2}\/\d{2}\/\d{4})/g);
     
     if (datasBarras) {
         if (datasBarras.length >= 2) {
-            // Caso tenha início e fim (ex: 20/01/2026 a 30/01/2026)
             let atual = parseDataBR(datasBarras[0]);
             const fim = parseDataBR(datasBarras[datasBarras.length - 1]);
             while (atual <= fim) {
@@ -125,11 +145,9 @@ function extrairDados(frase) {
                 atual.setDate(atual.getDate() + 1);
             }
         } else {
-            // Caso tenha apenas UMA data (ex: seu novo formato)
             listaDatasFormatadas.push(datasBarras[0]);
         }
     } else {
-        // Mantém a lógica para formato por extenso (janeiro, fevereiro...)
         const anoMatch = fraseLimpa.match(/\d{4}/g);
         const ano = (anoMatch && anoMatch.length > 0) ? anoMatch[anoMatch.length - 1] : new Date().getFullYear();
         const mesMatch = fraseLimpa.match(/(janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)/i);
@@ -141,6 +159,7 @@ function extrairDados(frase) {
             for(let d = inicio; d <= fim; d++) listaDatasFormatadas.push(`${String(d).padStart(2, '0')}/${mesNum}/${ano}`);
         }
     }
+    
     return { nome, cargo: cargoFull, lotacao, listaDatasFormatadas };
 }
 
@@ -209,6 +228,7 @@ async function gerar() {
 </script>
 </body>
 </html>
+
 
 
 
