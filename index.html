@@ -196,8 +196,12 @@ function montarTabela(dados, dias) {
         });
         html += `</tr>`;
 
+        // AQUI ESTAVA O ERRO (Corrigido abaixo com o </td>)
         html += `<tr>
-            <td>${dados.lotacao.toUpperCase()}<td>${dados.cargo.toUpperCase()}<br>Substituto(a)</td><td>${dados.nome.toUpperCase()}</td>`;
+            <td>${dados.lotacao.toUpperCase()}</td>
+            <td>${dados.cargo.toUpperCase()}<br>Substituto(a)</td>
+            <td>${dados.nome.toUpperCase()}</td>`;
+            
         grupo.forEach(d => {
             if (d) html += `<td class="celula-assinatura"></td>`;
         });
@@ -229,7 +233,8 @@ async function gerar() {
 
     const opt = {
         margin: 0,
-        filename: `Frequencia_${dados.nome.replace(/ /g, '_')}.pdf`,
+        // Nome corrigido para Title Case sem underlines
+        filename: `Folha de Frequência ${dados.nome.toLowerCase().replace(/(^\w{1})|(\s+\w{1})/g, letter => letter.toUpperCase())}.pdf`,
         image: { type: 'jpeg', quality: 1 },
         html2canvas: { scale: 3, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
@@ -244,6 +249,7 @@ async function gerar() {
 </script>
 </body>
 </html>
+
 
 
 
