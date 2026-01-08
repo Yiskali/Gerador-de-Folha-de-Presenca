@@ -115,7 +115,7 @@ function extrairDados(frase) {
             // Se não achar o padrão completo, tenta pegar só o cargo e limpar (fallback)
             const matchSimples = fraseLimpa.match(/(?:cargo de|função gratificada de)\s+(.*?)(?:,|\.| no período)/i);
             cargoFull = matchSimples ? matchSimples[1].trim() : "";
-            lotacao = cargoFull.replace(/^(Chefe de |Chefe da |Assessor de |Assessor da |Gerente de |Gerente da |Substituto do |Substituto da )/i, "");
+            lotacao = cargoFull.replace(/^(Chefe|Gerente|Assessor|Coordenador|Diretor)\s+(?:de|da|do|das|dos)\s+/i, "");
         }
     } 
     // 2. Lógica para Texto Direto (Separado por vírgulas)
@@ -129,7 +129,7 @@ function extrairDados(frase) {
              lotacao = partes[2].trim().replace(/^(da |do |na |no )/i, "");
         } else {
             // Se informou apenas: Nome, Cargo, Data (3 partes) -> Deriva a lotação do cargo
-            lotacao = cargoFull.replace(/^(Chefe de |Chefe da |Assessor de |Assessor da |Gerente de |Gerente da |Substituto do |Substituto da )/i, "");
+            lotacao = cargoFull.replace(/^(Chefe|Gerente|Assessor|Coordenador|Diretor)\s+(?:de|da|do|das|dos)\s+/i, "");
         }
     }
 
@@ -228,6 +228,7 @@ async function gerar() {
 </script>
 </body>
 </html>
+
 
 
 
