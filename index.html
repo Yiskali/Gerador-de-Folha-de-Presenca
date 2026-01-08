@@ -63,6 +63,19 @@
             .controls, #preview-title { display: none; }
             body { padding: 0; background: white; }
         }
+
+        .disclaimer {
+            color: #c62828;
+            font-size: 13px;
+            font-weight: bold;
+            margin-top: 15px;
+            text-align: center;
+            background-color: #ffebee;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #ffcdd2;
+        }
+        
     </style>
 </head>
 <body>
@@ -83,6 +96,9 @@
     
     <div class="site-footer">desenvolvido por aliane.sousa</div>
     
+    <div class="disclaimer">
+    ⚠ Certifique-se de que a folha está correta antes de encaminhar ao(à) substituto(a).
+        
 </div>
 
 <div id="preview-title">PRÉ-VISUALIZAÇÃO DA FOLHA:</div>
@@ -181,7 +197,7 @@ function montarTabela(dados, dias) {
         html += `</tr>`;
 
         html += `<tr>
-            <td>${dados.lotacao.toUpperCase()}</td><td>${dados.cargo.toUpperCase()}</td><td>${dados.nome.toUpperCase()}</td>`;
+            <td>${dados.lotacao.toUpperCase()}<td>${dados.cargo.toUpperCase()}<br>Substituto(a)</td><td>${dados.nome.toUpperCase()}</td>`;
         grupo.forEach(d => {
             if (d) html += `<td class="celula-assinatura"></td>`;
         });
@@ -228,6 +244,7 @@ async function gerar() {
 </script>
 </body>
 </html>
+
 
 
 
