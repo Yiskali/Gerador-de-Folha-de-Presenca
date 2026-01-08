@@ -114,14 +114,22 @@ function extrairDados(frase) {
     lotacao = cargoFull.replace(/^(Chefe de |Chefe da |Assessor de |Assessor da |Gerente de |Gerente da |Substituto do |Substituto da )/i, "");
 
     const datasBarras = fraseLimpa.match(/(\d{2}\/\d{2}\/\d{4})/g);
-    if (datasBarras && datasBarras.length >= 2) {
-        let atual = parseDataBR(datasBarras[0]);
-        const fim = parseDataBR(datasBarras[datasBarras.length - 1]);
-        while (atual <= fim) {
-            listaDatasFormatadas.push(`${String(atual.getDate()).padStart(2, '0')}/${String(atual.getMonth() + 1).padStart(2, '0')}/${atual.getFullYear()}`);
-            atual.setDate(atual.getDate() + 1);
+    
+    if (datasBarras) {
+        if (datasBarras.length >= 2) {
+            // Caso tenha início e fim (ex: 20/01/2026 a 30/01/2026)
+            let atual = parseDataBR(datasBarras[0]);
+            const fim = parseDataBR(datasBarras[datasBarras.length - 1]);
+            while (atual <= fim) {
+                listaDatasFormatadas.push(`${String(atual.getDate()).padStart(2, '0')}/${String(atual.getMonth() + 1).padStart(2, '0')}/${atual.getFullYear()}`);
+                atual.setDate(atual.getDate() + 1);
+            }
+        } else {
+            // Caso tenha apenas UMA data (ex: seu novo formato)
+            listaDatasFormatadas.push(datasBarras[0]);
         }
     } else {
+        // Mantém a lógica para formato por extenso (janeiro, fevereiro...)
         const anoMatch = fraseLimpa.match(/\d{4}/g);
         const ano = (anoMatch && anoMatch.length > 0) ? anoMatch[anoMatch.length - 1] : new Date().getFullYear();
         const mesMatch = fraseLimpa.match(/(janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)/i);
@@ -201,5 +209,6 @@ async function gerar() {
 </script>
 </body>
 </html>
+
 
 
