@@ -127,18 +127,10 @@ function extrairDados(frase) {
             cargoFull = matchCompleto[1].trim();
             lotacao = matchCompleto[2].trim();
         } else {
-            // Fallback se não achar "da/do"
             const matchSimples = fraseLimpa.match(/(?:cargo de|função gratificada de)\s+(.*?)(?:,|\.| no período)/i);
             cargoFull = matchSimples ? matchSimples[1].trim() : "";
-            
-            // NOVA LÓGICA DE COORDENADORIA
-            if (/^Coordenador/i.test(cargoFull)) {
-                // Ex: Coordenador do Setor -> Coordenadoria do Setor
-                lotacao = cargoFull.replace(/^Coordenador/i, "Coordenadoria");
-            } else {
-                // Remove Chefe, Gerente, etc (Coordenador saiu desta lista)
-                lotacao = cargoFull.replace(/^(Chefe|Gerente|Assessor|Diretor|Substituto|Titular)\s+(?:de|da|do|das|dos)\s+/i, "");
-            }
+            // Fallback padrão
+            lotacao = cargoFull.replace(/^(Chefe|Gerente|Diretor|Substituto|Titular)\s+(?:de|da|do|das|dos)\s+/i, "");
         }
     } 
     // 2. Lógica para Texto Direto
@@ -153,16 +145,22 @@ function extrairDados(frase) {
         if (temData) fimCargo = partes.length - 1;
 
         cargoFull = partes.slice(1, fimCargo).join(',').trim();
-
-        // NOVA LÓGICA DE COORDENADORIA AQUI TAMBÉM
-        if (/^Coordenador/i.test(cargoFull)) {
-            // Transforma: Coordenador de X -> Coordenadoria de X
-            lotacao = cargoFull.replace(/^Coordenador/i, "Coordenadoria");
-        } else {
-            // Remove as outras chefias
-            lotacao = cargoFull.replace(/^(Chefe|Gerente|Assessor|Diretor|Substituto|Titular)\s+(?:de|da|do|das|dos)\s+/i, "");
-        }
+        
+        // Fallback padrão
+        lotacao = cargoFull.replace(/^(Chefe|Gerente|Diretor|Substituto|Titular)\s+(?:de|da|do|das|dos)\s+/i, "");
     }
+
+    // --- REGRAS ESPECÍFICAS DE LOTAÇÃO (Correções Finais) ---
+    
+    // Regra 1: Coordenador -> Coordenadoria
+    if (/^Coordenador/i.test(cargoFull)) {
+        lotacao = cargoFull.replace(/^Coordenador/i, "Coordenadoria");
+    }
+    // Regra 2: Assessor -> Assessoria
+    else if (/^Assessor/i.test(cargoFull)) {
+        lotacao = cargoFull.replace(/^Assessor/i, "Assessoria");
+    }
+    // ---------------------------------------------------------
 
     // --- BLOCO DE DATAS ---
     const datasBarras = fraseLimpa.match(/(\d{2}\/\d{2}\/\d{4})/g);
@@ -264,6 +262,7 @@ async function gerar() {
 </script>
 </body>
 </html>
+
 
 
 
