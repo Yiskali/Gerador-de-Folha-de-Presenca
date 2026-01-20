@@ -160,7 +160,13 @@ function extrairDados(frase) {
     else if (/^Assessor/i.test(cargoFull)) {
         lotacao = cargoFull.replace(/^Assessor/i, "Assessoria");
     }
+
+    // REGRA 3: Se o cargo contiver estas palavras, a lotação será o próprio cargo limpo
+    else if (/(Serviço|Divisão|Unidade|Setor|)/i.test(cargoFull)) {
+        lotacao = cargoFull.replace(/^(Chefe|Gerente|Diretor|Substituto|Titular)\s+(?:de|da|do|das|dos)\s+/i, "");
+    }
     // ---------------------------------------------------------
+    
 
     // --- BLOCO DE DATAS ---
     const datasBarras = fraseLimpa.match(/(\d{2}\/\d{2}\/\d{4})/g);
@@ -209,7 +215,7 @@ function montarTabela(dados, dias) {
         });
         html += `</tr>`;
 
-        // AQUI ESTAVA O ERRO (Corrigido abaixo com o </td>)
+    
         html += `<tr>
             <td>${dados.lotacao.toUpperCase()}</td>
             <td>${dados.cargo.toUpperCase()}<br>Substituto(a)</td>
@@ -262,6 +268,7 @@ async function gerar() {
 </script>
 </body>
 </html>
+
 
 
 
