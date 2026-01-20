@@ -132,12 +132,12 @@ function extrairDados(frase) {
             lotacao = cargoFull.replace(/^(Chefe|Gerente|Assessor|Coordenador|Diretor|Substituto|Titular)\s+(?:de|da|do|das|dos)\s+/i, "");
         }
     } 
-    // 2. Lógica para Texto Direto (CORRIGIDA AQUI)
+    // 2. Lógica para Texto Direto (Nome, Cargo, Data)
     else {
         const partes = fraseLimpa.split(',');
         nome = partes[0].trim();
         
-        // Verifica se a última parte parece uma data para excluí-la do Cargo
+        // Verifica datas para isolar o Cargo corretamente
         const ultimaParte = partes[partes.length - 1].trim();
         const temData = /\d/.test(ultimaParte) || /(janeiro|fevereiro|março|abril|maio|junho|julho|agosto|setembro|outubro|novembro|dezembro)/i.test(ultimaParte);
         
@@ -146,12 +146,18 @@ function extrairDados(frase) {
             fimCargo = partes.length - 1;
         }
 
-        // Junta tudo o que está entre o Nome e a Data para formar o Cargo (ignora vírgulas internas)
+        // Junta o cargo (ex: Chefe, de, Serviço...)
         cargoFull = partes.slice(1, fimCargo).join(',').trim();
 
-        // Gera a lotação removendo apenas a chefia
+        // Gera a lotação removendo a chefia
         lotacao = cargoFull.replace(/^(Chefe|Gerente|Assessor|Coordenador|Diretor|Substituto|Titular)\s+(?:de|da|do|das|dos)\s+/i, "");
     }
+
+    // --- NOVA REGRA: Ajuste de Coordenador -> Coordenadoria ---
+    if (/^Coordenador/i.test(cargoFull) && !/^Coordenadoria/i.test(lotacao)) {
+        lotacao = "Coordenadoria de " + lotacao;
+    }
+    // -----------------------------------------------------------
 
     // --- BLOCO DE DATAS ---
     const datasBarras = fraseLimpa.match(/(\d{2}\/\d{2}\/\d{4})/g);
@@ -253,6 +259,7 @@ async function gerar() {
 </script>
 </body>
 </html>
+
 
 
 
