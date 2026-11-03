@@ -199,7 +199,7 @@ function extrairDados(frase) {
     return { nome, cargo: cargoFull, lotacao, listaDatasFormatadas };
 }
 
-// --- DIAS NÃO ÚTEIS (sábado, domingo e feriados nacionais) ---
+// --- DIAS NÃO ÚTEIS (sábado, domingo, feriados nacionais/DF e pontos facultativos) ---
 function calcularPascoa(ano) {
     const a = ano % 19, b = Math.floor(ano / 100), c = ano % 100;
     const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
@@ -214,12 +214,16 @@ function calcularPascoa(ano) {
 }
 
 function feriadosDoAno(ano) {
-    const fixos = ['01/01', '21/04', '01/05', '07/09', '12/10', '02/11', '15/11', '20/11', '25/12'];
+    // Nacionais + DF (21/04 Fundação de Brasília; 30/11 Dia do Evangélico)
+    const fixos = ['01/01', '21/04', '01/05', '07/09', '12/10', '02/11', '15/11', '20/11', '30/11', '25/12'];
     const lista = new Set(fixos.map(f => `${f}/${ano}`));
-    // Sexta-feira Santa (2 dias antes da Páscoa)
-    const sextaSanta = calcularPascoa(ano);
-    sextaSanta.setDate(sextaSanta.getDate() - 2);
-    lista.add(`${String(sextaSanta.getDate()).padStart(2, '0')}/${String(sextaSanta.getMonth() + 1).padStart(2, '0')}/${ano}`);
+    // Móveis, a partir da Páscoa: Carnaval (seg e ter), Sexta-feira Santa, Corpus Christi
+    const pascoa = calcularPascoa(ano);
+    [-48, -47, -2, 60].forEach(desloc => {
+        const d = new Date(pascoa);
+        d.setDate(d.getDate() + desloc);
+        lista.add(`${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${ano}`);
+    });
     return lista;
 }
 
